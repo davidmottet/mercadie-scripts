@@ -1,5 +1,5 @@
-import { initializeParse, testParseConnection } from './config/parseConfig.js';
-import './config/config.js';
+import { initializeParse, testParseConnection } from '../config/parseConfig.js';
+import '../config/config.js';
 
 async function main() {
   try {
