@@ -5,12 +5,15 @@ export class OllamaProvider extends AIProvider {
     super();
     this.baseUrl = `http://${_config.url}:${_config.port}`;
     this.model = _config.model;
-    this.maxRetries = 3;
-    this.timeout = 30000; // 30 secondes
+    this.maxRetries = _config.maxRetries || 3;
+    this.timeout = _config.timeout || 30000; // Utilise le timeout de la config ou 30s par défaut
+    this.retryDelay = _config.retryDelay || 1000; // Utilise le délai de la config ou 1s par défaut
     console.log('OllamaProvider initialized with config:', {
       baseUrl: this.baseUrl,
       model: this.model,
-      timeout: this.timeout
+      timeout: this.timeout,
+      maxRetries: this.maxRetries,
+      retryDelay: this.retryDelay
     });
   }
 
@@ -77,7 +80,7 @@ export class OllamaProvider extends AIProvider {
         lastError = error;
 
         if (attempt < this.maxRetries) {
-          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+          const delay = this.retryDelay * Math.pow(2, attempt - 1); // Exponential backoff
           console.log(`Retrying in ${delay}ms...`);
           await new Promise(resolve => setTimeout(resolve, delay));
         }

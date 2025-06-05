@@ -1,6 +1,6 @@
-import Parse from './base.js';
+import Parse, { BaseModel } from './base.js';
 
-class MeasurementUnit extends Parse.Object {
+class MeasurementUnit extends BaseModel {
   constructor() {
     super('MeasurementUnit');
   }
@@ -16,16 +16,25 @@ class MeasurementUnit extends Parse.Object {
   }
 
   // Méthodes statiques
-  static async findByName(name) {
-    const query = new Parse.Query(MeasurementUnit);
-    query.equalTo('name', name);
-    return query.first();
+  static async getAll(options = {}, { sessionToken = null } = {}) {
+    return super.getAll(options, { sessionToken });
   }
 
-  static async getAll() {
-    const query = new Parse.Query(MeasurementUnit);
-    query.ascending('name');
-    return query.find();
+  static async findByName(name, { sessionToken = null } = {}) {
+    return super.findByName(name, { sessionToken });
+  }
+
+  static async findById(id, { sessionToken = null } = {}) {
+    return super.findById(id, { sessionToken });
+  }
+
+  // Méthodes d'instance
+  async save(options = {}, { sessionToken = null } = {}) {
+    return super.save(options, { sessionToken });
+  }
+
+  async destroy(options = {}, { sessionToken = null } = {}) {
+    return super.destroy(options, { sessionToken });
   }
 }
 

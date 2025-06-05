@@ -1,7 +1,7 @@
-import Parse from './base.js';
+import Parse, { BaseModel } from './base.js';
 import MeasurementUnit from './MeasurementUnit.js';
 
-class Ingredient extends Parse.Object {
+class Ingredient extends BaseModel {
   constructor() {
     super('Ingredient');
   }
@@ -39,10 +39,16 @@ class Ingredient extends Parse.Object {
   set grossWeight(value) { this.set('grossWeight', value); }
 
   // Méthodes statiques
-  static async findByName(name) {
-    const query = new Parse.Query(Ingredient);
-    query.equalTo('name', name);
-    return query.first();
+  static async getAll(options = {}, { sessionToken = null } = {}) {
+    return super.getAll(options, { sessionToken });
+  }
+
+  static async findByName(name, { sessionToken = null } = {}) {
+    return super.findByName(name, { sessionToken });
+  }
+
+  static async findById(id, { sessionToken = null } = {}) {
+    return super.findById(id, { sessionToken });
   }
 
   static async findByType(type) {
@@ -51,13 +57,15 @@ class Ingredient extends Parse.Object {
     return query.find();
   }
 
-  static async getAll() {
-    const query = new Parse.Query(Ingredient);
-    query.ascending('name');
-    return query.find();
+  // Méthodes d'instance
+  async save(options = {}, { sessionToken = null } = {}) {
+    return super.save(options, { sessionToken });
   }
 
-  // Méthodes d'instance
+  async destroy(options = {}, { sessionToken = null } = {}) {
+    return super.destroy(options, { sessionToken });
+  }
+
   async setMeasurementUnit(unitName) {
     const unit = await MeasurementUnit.findByName(unitName);
     if (unit) {

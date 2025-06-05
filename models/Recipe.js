@@ -1,7 +1,7 @@
-import Parse from './base.js';
+import Parse, { BaseModel } from './base.js';
 import RecipeStep from './RecipeStep.js';
 
-class Recipe extends Parse.Object {
+class Recipe extends BaseModel {
   constructor() {
     super('Recipe');
   }
@@ -119,10 +119,8 @@ class Recipe extends Parse.Object {
     return query.find();
   }
 
-  static async getAll() {
-    const query = new Parse.Query(Recipe);
-    query.ascending('name');
-    return query.find();
+  static async getAll(options = {}, { sessionToken = null } = {}) {
+    return super.getAll(options, { sessionToken });
   }
 
   static async getPublished() {
@@ -130,6 +128,10 @@ class Recipe extends Parse.Object {
     query.equalTo('published', true);
     query.equalTo('archived', false);
     return query.find();
+  }
+
+  static async findById(id, { sessionToken = null } = {}) {
+    return super.findById(id, { sessionToken });
   }
 
   // Méthodes d'instance
@@ -142,11 +144,11 @@ class Recipe extends Parse.Object {
     return step;
   }
 
-  async getSteps() {
+  async getSteps({ sessionToken = null } = {}) {
     const query = new Parse.Query(RecipeStep);
     query.equalTo('recipe', this);
     query.ascending('order');
-    return query.find();
+    return query.find({ sessionToken });
   }
 
   calculateTotalTime() {
@@ -162,6 +164,14 @@ class Recipe extends Parse.Object {
       }
     });
     await this.save();
+  }
+
+  async save(options = {}, { sessionToken = null } = {}) {
+    return super.save(options, { sessionToken });
+  }
+
+  async destroy(options = {}, { sessionToken = null } = {}) {
+    return super.destroy(options, { sessionToken });
   }
 }
 

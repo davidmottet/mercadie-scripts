@@ -35,15 +35,15 @@ async function runTests() {
     
     console.log('🔍 Executing query with session token...');
     try {
-      const unit = await query.first({ sessionToken });
-      
-      if (unit) {
-        console.log('✅ Found unit:', {
-          id: unit.id,
-          name: unit.get('name')
-        });
-      } else {
-        console.log('ℹ️ No unit named "gram" found');
+    const unit = await query.first({ sessionToken });
+    
+    if (unit) {
+      console.log('✅ Found unit:', {
+        id: unit.id,
+        name: unit.get('name')
+      });
+    } else {
+      console.log('ℹ️ No unit named "gram" found');
       }
     } catch (error) {
       console.error('❌ Error finding unit:', {

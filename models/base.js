@@ -111,4 +111,44 @@ Parse.Query.prototype.first = async function(...args) {
   }
 };
 
-export default Parse; 
+class BaseModel extends Parse.Object {
+  constructor(className) {
+    super(className);
+  }
+
+  // Méthodes statiques communes
+  static async getAll(options = {}, { sessionToken = null } = {}) {
+    const query = new Parse.Query(this);
+    query.ascending('name');
+    
+    // Ajout des options de requête si spécifiées
+    if (options.limit) query.limit(options.limit);
+    if (options.skip) query.skip(options.skip);
+    
+    // Exécution de la requête avec le token de session
+    return query.find({ sessionToken });
+  }
+
+  static async findByName(name, { sessionToken = null } = {}) {
+    const query = new Parse.Query(this);
+    query.equalTo('name', name);
+    return query.first({ sessionToken });
+  }
+
+  static async findById(id, { sessionToken = null } = {}) {
+    const query = new Parse.Query(this);
+    return query.get(id, { sessionToken });
+  }
+
+  // Méthodes d'instance
+  async save(options = {}, { sessionToken = null } = {}) {
+    return super.save(null, { ...options, sessionToken });
+  }
+
+  async destroy(options = {}, { sessionToken = null } = {}) {
+    return super.destroy({ ...options, sessionToken });
+  }
+}
+
+export default Parse;
+export { BaseModel }; 
