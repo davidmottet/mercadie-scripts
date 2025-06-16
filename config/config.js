@@ -17,7 +17,10 @@ export default {
     ollama: {
       url: process.env.OLLAMA_URL || 'localhost',
       port: process.env.OLLAMA_PORT || '11434',
-      model: process.env.OLLAMA_MODEL || 'llama2'
+      model: process.env.OLLAMA_MODEL || 'llama2',
+      timeout: 0,
+      maxRetries: 3,
+      retryDelay: 1000
     }
   },
   scraper: {

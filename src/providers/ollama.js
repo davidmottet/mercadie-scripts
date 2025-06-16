@@ -6,23 +6,37 @@ export class OllamaProvider extends AIProvider {
     this.baseUrl = `http://${_config.url}:${_config.port}`;
     this.model = _config.model;
     this.maxRetries = _config.maxRetries || 3;
-    this.timeout = _config.timeout || 30000; // Utilise le timeout de la config ou 30s par défaut
-    this.retryDelay = _config.retryDelay || 1000; // Utilise le délai de la config ou 1s par défaut
+    // Timeout par défaut à 5 minutes, ou désactivé si configuré à 0
+    this.timeout = _config.timeout === 0 ? 0 : (_config.timeout || 300000);
+    this.retryDelay = _config.retryDelay || 1000;
     console.log('OllamaProvider initialized with config:', {
       baseUrl: this.baseUrl,
       model: this.model,
-      timeout: this.timeout,
+      timeout: this.timeout === 0 ? 'disabled' : `${this.timeout}ms`,
       maxRetries: this.maxRetries,
       retryDelay: this.retryDelay
     });
   }
 
   async fetchWithTimeout(url, options) {
+    // Si le timeout est désactivé (0), on fait une requête normale
+    if (this.timeout === 0) {
+      console.log(`Making request to ${url} (no timeout)...`);
+      return fetch(url, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+    }
+
+    // Sinon, on utilise le timeout configuré
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
     try {
-      console.log(`Making request to ${url}...`);
+      console.log(`Making request to ${url} (timeout: ${this.timeout}ms)...`);
       const response = await fetch(url, {
         ...options,
         signal: controller.signal,
@@ -67,12 +81,31 @@ export class OllamaProvider extends AIProvider {
         console.log('Received response:', data);
 
         try {
-          const jsonStr = data.response.replace(/^[^{]*({.*})[^}]*$/s, '$1');
+          // Nettoyage de la réponse
+          let jsonStr = data.response;
+          
+          // Suppression des backticks et du mot "json" s'ils sont présents
+          jsonStr = jsonStr.replace(/```json\n?|\n?```/g, '');
+          
+          // Suppression des espaces et retours à la ligne au début et à la fin
+          jsonStr = jsonStr.trim();
+          
+          // Si la réponse commence par un tableau ou un objet, on le prend tel quel
+          // Sinon, on essaie d'extraire le premier objet JSON valide
+          if (!jsonStr.startsWith('[') && !jsonStr.startsWith('{')) {
+            const match = jsonStr.match(/\[[\s\S]*\]|\{[\s\S]*\}/);
+            if (match) {
+              jsonStr = match[0];
+            }
+          }
+
+          // Tentative de parsing
           const result = JSON.parse(jsonStr);
           console.log('Successfully parsed JSON response');
           return result;
         } catch (error) {
           console.error('Error parsing JSON:', error);
+          console.error('Raw response:', data.response);
           throw new Error('Invalid JSON response from Ollama');
         }
       } catch (error) {
