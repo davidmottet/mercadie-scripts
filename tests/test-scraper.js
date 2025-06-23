@@ -1,4 +1,4 @@
-import { getScraperProvider } from '../src/providers/index.js';
+import { getScraperProvider } from '../providers/index.js';
 import '../config/config.js';
 
 async function main() {

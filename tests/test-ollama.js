@@ -1,4 +1,4 @@
-import { OllamaProvider } from '../src/providers/ollama.js';
+import { OllamaProvider } from '../providers/ollama.js';
 import config from '../config/config.js';
 
 async function main() {

@@ -1,4 +1,4 @@
-import config from '../../config/config.js';
+import config from '../config/config.js';
 import { OpenAIProvider } from './openai.js';
 import { OllamaProvider } from './ollama.js';
 import { ScraperProvider } from './scraper.js';
