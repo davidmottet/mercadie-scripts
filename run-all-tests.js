@@ -6,10 +6,15 @@ import { join } from 'path';
 
 const TESTS_DIR = './tests';
 
+// Vérification des arguments de ligne de commande
+const isVerbose = process.argv.includes('--verbose') || process.argv.includes('-v');
+
 async function runTest(testFile) {
   return new Promise((resolve) => {
-    console.log(`\n🧪 Exécution de ${testFile}...`);
-    console.log('─'.repeat(50));
+    if (isVerbose) {
+      console.log(`\n🧪 Exécution de ${testFile}...`);
+      console.log('─'.repeat(50));
+    }
     
     const testProcess = spawn('node', [join(TESTS_DIR, testFile)], {
       stdio: 'pipe',
@@ -21,17 +26,26 @@ async function runTest(testFile) {
     let exitCode = 0;
 
     testProcess.stdout.on('data', (data) => {
-      stdout += data.toString();
-      process.stdout.write(data);
+      const output = data.toString();
+      stdout += output;
+      if (isVerbose) {
+        process.stdout.write(output);
+      }
     });
 
     testProcess.stderr.on('data', (data) => {
-      stderr += data.toString();
-      process.stderr.write(data);
+      const output = data.toString();
+      stderr += output;
+      if (isVerbose) {
+        process.stderr.write(output);
+      }
     });
 
     testProcess.on('close', (code) => {
       exitCode = code;
+      if (isVerbose) {
+        console.log(`\n${exitCode === 0 ? '✅' : '❌'} ${testFile} terminé (code: ${exitCode})`);
+      }
       resolve({
         file: testFile,
         success: code === 0,
@@ -42,7 +56,10 @@ async function runTest(testFile) {
     });
 
     testProcess.on('error', (error) => {
-      console.error(`❌ Erreur lors de l'exécution de ${testFile}:`, error.message);
+      const errorMsg = `❌ Erreur lors de l'exécution de ${testFile}: ${error.message}`;
+      if (isVerbose) {
+        console.error(errorMsg);
+      }
       resolve({
         file: testFile,
         success: false,
@@ -55,7 +72,12 @@ async function runTest(testFile) {
 }
 
 async function runAllTests() {
-  console.log('🚀 Démarrage de tous les tests...\n');
+  console.log('🚀 Démarrage de tous les tests...');
+  if (isVerbose) {
+    console.log('📝 Mode verbose activé - affichage des logs détaillés\n');
+  } else {
+    console.log('🔇 Mode silencieux - affichage du résumé uniquement\n');
+  }
   
   try {
     // Récupération de tous les fichiers de test
@@ -70,11 +92,19 @@ async function runAllTests() {
     
     // Exécution séquentielle de tous les tests
     for (const testFile of testFiles) {
+      if (!isVerbose) {
+        process.stdout.write(`🧪 ${testFile}... `);
+      }
+      
       const result = await runTest(testFile);
       results.push(result);
       
+      if (!isVerbose) {
+        console.log(result.success ? '✅' : '❌');
+      }
+      
       // Pause entre les tests pour éviter la surcharge
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
 
     // Résumé des résultats
@@ -99,16 +129,35 @@ async function runAllTests() {
       console.log('\n❌ Tests qui ne marchent pas:');
       failedTests.forEach(result => {
         console.log(`  - ${result.file} (code de sortie: ${result.exitCode})`);
-        if (result.stderr) {
-          console.log(`    Erreur: ${result.stderr.trim()}`);
+        if (result.stderr && !isVerbose) {
+          // En mode silencieux, on affiche juste la première ligne d'erreur
+          const firstErrorLine = result.stderr.split('\n')[0].trim();
+          if (firstErrorLine) {
+            console.log(`    Erreur: ${firstErrorLine}`);
+          }
         }
       });
+      
+      // En mode verbose, on peut afficher plus de détails si demandé
+      if (isVerbose) {
+        console.log('\n📋 Détails des erreurs:');
+        failedTests.forEach(result => {
+          console.log(`\n--- ${result.file} ---`);
+          if (result.stderr) {
+            console.log('STDERR:');
+            console.log(result.stderr);
+          }
+        });
+      }
     }
     
     console.log('\n' + '='.repeat(60));
     
     if (failedTests.length > 0) {
-      console.log('⚠️  Certains tests ont échoué. Vérifiez les erreurs ci-dessus.');
+      console.log('⚠️  Certains tests ont échoué.');
+      if (!isVerbose) {
+        console.log('💡 Utilisez --verbose pour voir les détails des erreurs.');
+      }
       process.exit(1);
     } else {
       console.log('🎉 Tous les tests sont passés avec succès !');
@@ -119,6 +168,27 @@ async function runAllTests() {
     console.error('❌ Erreur lors de l\'exécution des tests:', error.message);
     process.exit(1);
   }
+}
+
+// Affichage de l'aide si demandé
+if (process.argv.includes('--help') || process.argv.includes('-h')) {
+  console.log(`
+🚀 Script d'exécution de tous les tests
+
+Usage:
+  node run-all-tests.js [options]
+
+Options:
+  --verbose, -v    Affiche les logs détaillés de chaque test
+  --help, -h       Affiche cette aide
+
+Exemples:
+  node run-all-tests.js           # Mode silencieux (résumé uniquement)
+  node run-all-tests.js --verbose # Mode verbose (logs détaillés)
+  npm run test:all               # Via npm (mode silencieux)
+  npm run test:all -- --verbose  # Via npm avec mode verbose
+`);
+  process.exit(0);
 }
 
 // Exécution du script
