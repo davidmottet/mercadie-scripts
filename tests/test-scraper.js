@@ -1,5 +1,5 @@
-import { getScraperProvider } from './src/providers/index.js';
-import './config/config.js';
+import { getScraperProvider } from '../src/providers/index.js';
+import '../config/config.js';
 
 async function main() {
   try {
