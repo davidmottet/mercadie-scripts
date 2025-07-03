@@ -20,9 +20,7 @@ class AIService {
       const prompt = generateRecipePrompt(target);
       const response = await this.provider.generateCompletion(prompt);
       
-      // Parser la réponse JSON
-      const cleanResponse = this.cleanJsonResponse(response);
-      const recipeData = JSON.parse(cleanResponse);
+      const recipeData = response;
       
       await this.logger.success('AI_GENERATE_RECIPE', 'Recette générée avec succès', recipeData);
       return recipeData;
@@ -39,8 +37,7 @@ class AIService {
       const prompt = resolveIngredientPrompt(ingredientName);
       const response = await this.provider.generateCompletion(prompt);
       
-      const cleanResponse = this.cleanJsonResponse(response);
-      const ingredientData = JSON.parse(cleanResponse);
+      const ingredientData = response;
       
       await this.logger.success('AI_RESOLVE_INGREDIENT', 'Ingrédient résolu', ingredientData);
       return ingredientData;
@@ -57,8 +54,7 @@ class AIService {
       const prompt = enhanceStepsPrompt(title, description, ingredients, rawSteps);
       const response = await this.provider.generateCompletion(prompt);
       
-      const cleanResponse = this.cleanJsonResponse(response);
-      const stepsData = JSON.parse(cleanResponse);
+      const stepsData = response;
       
       await this.logger.success('AI_ENHANCE_STEPS', 'Étapes enrichies avec succès', { stepCount: stepsData.steps.length });
       return stepsData.steps;
@@ -75,8 +71,7 @@ class AIService {
       const prompt = computeNutritionPrompt(ingredients, portions);
       const response = await this.provider.generateCompletion(prompt);
       
-      const cleanResponse = this.cleanJsonResponse(response);
-      const nutritionData = JSON.parse(cleanResponse);
+      const nutritionData = response;
       
       await this.logger.success('AI_COMPUTE_NUTRITION', 'Valeurs nutritionnelles calculées', nutritionData);
       return nutritionData.nutritionalValues;
@@ -87,22 +82,27 @@ class AIService {
   }
 
   cleanJsonResponse(response) {
-    // Nettoie la réponse pour extraire le JSON pur
-    let cleaned = response.trim();
-    
-    // Retire les éventuels backticks markdown
-    cleaned = cleaned.replace(/^```json\s*/, '').replace(/```\s*$/, '');
-    cleaned = cleaned.replace(/^```\s*/, '').replace(/```\s*$/, '');
-    
-    // Trouve le premier { et le dernier }
-    const firstBrace = cleaned.indexOf('{');
-    const lastBrace = cleaned.lastIndexOf('}');
-    
-    if (firstBrace !== -1 && lastBrace !== -1) {
-      cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+    if (typeof response === 'object' && response !== null) {
+      return response;
     }
     
-    return cleaned;
+    if (typeof response === 'string') {
+      let cleaned = response.trim();
+      
+      cleaned = cleaned.replace(/^```json\s*/, '').replace(/```\s*$/, '');
+      cleaned = cleaned.replace(/^```\s*/, '').replace(/```\s*$/, '');
+      
+      const firstBrace = cleaned.indexOf('{');
+      const lastBrace = cleaned.lastIndexOf('}');
+      
+      if (firstBrace !== -1 && lastBrace !== -1) {
+        cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+      }
+      
+      return cleaned;
+    }
+    
+    throw new Error('Réponse invalide du provider AI');
   }
 }
 
