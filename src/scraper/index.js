@@ -1,9 +1,9 @@
-import { getProvider } from '../../providers/index.js';
+import { getScraperProvider } from '../../providers/index.js';
 import Logger from '../logger/index.js';
 
 class ScraperService {
   constructor() {
-    this.scraper = getProvider('scraper');
+    this.scraper = getScraperProvider();
     this.logger = new Logger();
   }
 
