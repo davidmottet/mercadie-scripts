@@ -10,10 +10,10 @@ class IngredientResolver {
   }
 
   async resolveIngredients(rawIngredients) {
-    await this.logger.info('INGREDIENT_RESOLVER_START', `Résolution de ${rawIngredients.length} ingrédients`);
+    await this.logger.info('INGREDIENT_RESOLVER_START', `Resolving ${rawIngredients.length} ingredients`);
 
     const resolvedIngredients = [];
-    const cache = new Map(); // Cache pour éviter les doublons
+    const cache = new Map(); // Cache to avoid duplicates
 
     for (const rawIngredient of rawIngredients) {
       try {
@@ -22,11 +22,11 @@ class IngredientResolver {
           resolvedIngredients.push(resolved);
         }
       } catch (error) {
-        await this.logger.warn('INGREDIENT_RESOLVER_SKIP', `Impossible de résoudre: ${rawIngredient}`, { error: error.message });
+        await this.logger.warn('INGREDIENT_RESOLVER_SKIP', `Unable to resolve: ${rawIngredient}`, { error: error.message });
       }
     }
 
-    await this.logger.success('INGREDIENT_RESOLVER_COMPLETE', `${resolvedIngredients.length} ingrédients résolus`);
+    await this.logger.success('INGREDIENT_RESOLVER_COMPLETE', `${resolvedIngredients.length} ingredients resolved`);
     return resolvedIngredients;
   }
 
@@ -36,36 +36,36 @@ class IngredientResolver {
 
     await this.logger.debug('INGREDIENT_RESOLVER_PARSE', `Parsing: "${rawIngredient}" → "${ingredientName}"`);
 
-    // Vérifier le cache
+    // Check cache
     if (cache.has(ingredientName)) {
       return { ...cache.get(ingredientName), ...parsedIngredient };
     }
 
-    // Vérifier en base de données
+    // Check database
     let ingredient = await this.dbService.findIngredientByName(ingredientName);
 
     if (ingredient) {
-      await this.logger.debug('INGREDIENT_RESOLVER_FOUND', `Ingrédient trouvé en base: ${ingredient.name}`);
+      await this.logger.debug('INGREDIENT_RESOLVER_FOUND', `Ingredient found in database: ${ingredient.name}`);
       const result = this.mapIngredientFromDB(ingredient, parsedIngredient);
       cache.set(ingredientName, result);
       return result;
     }
 
-    // Créer un nouvel ingrédient via IA
+    // Create new ingredient via AI
     try {
       const aiIngredientData = await this.aiService.resolveIngredient(ingredientName);
       ingredient = await this.dbService.saveIngredient(aiIngredientData);
       
-      await this.logger.success('INGREDIENT_RESOLVER_CREATED', `Nouvel ingrédient créé: ${ingredient.name}`);
+      await this.logger.success('INGREDIENT_RESOLVER_CREATED', `New ingredient created: ${ingredient.name}`);
       
       const result = this.mapIngredientFromDB(ingredient, parsedIngredient);
       cache.set(ingredientName, result);
       return result;
       
     } catch (error) {
-      await this.logger.error('INGREDIENT_RESOLVER_AI_FAILED', `Échec IA pour ${ingredientName}: ${error.message}`);
+      await this.logger.error('INGREDIENT_RESOLVER_AI_FAILED', `AI failed for ${ingredientName}: ${error.message}`);
       
-      // Fallback: créer un ingrédient basique
+      // Fallback: create basic ingredient
       const fallbackData = this.createFallbackIngredient(ingredientName);
       ingredient = await this.dbService.saveIngredient(fallbackData);
       
@@ -78,9 +78,9 @@ class IngredientResolver {
   parseRawIngredient(rawIngredient) {
     const cleaned = rawIngredient.trim();
     
-    // Expressions régulières pour extraire quantité, unité et nom
+    // Regular expressions to extract quantity, unit and name
     const patterns = [
-      /^(\d+(?:[.,]\d+)?)\s*(g|kg|ml|l|cl|cuillères?|c\.?\s*à\s*s|c\.?\s*à\s*c|tasses?|pincées?)\s+(?:de\s+)?(.+)$/i,
+      /^(\d+(?:[.,]\d+)?)\s*(g|kg|ml|l|cl|tablespoons?|tsp|teaspoons?|cups?|pinches?)\s+(?:of\s+)?(.+)$/i,
       /^(\d+(?:[.,]\d+)?)\s+(.+)$/,
       /^(\d+)\s*(.+)$/,
       /^(.+)$/
@@ -90,7 +90,7 @@ class IngredientResolver {
       const match = cleaned.match(pattern);
       if (match) {
         if (match.length === 4) {
-          // Quantité + unité + nom
+          // Quantity + unit + name
           return {
             name: this.normalizeIngredientName(match[3]),
             originalText: rawIngredient,
@@ -100,17 +100,17 @@ class IngredientResolver {
             rawUnit: match[2]
           };
         } else if (match.length === 3) {
-          // Quantité + nom (sans unité claire)
+          // Quantity + name (no clear unit)
           return {
             name: this.normalizeIngredientName(match[2]),
             originalText: rawIngredient,
             quantity: parseFloat(match[1].replace(',', '.')),
-            unit: 'unité',
+            unit: 'unit',
             rawQuantity: match[1],
             rawUnit: ''
           };
         } else {
-          // Juste le nom
+          // Just the name
           return {
             name: this.normalizeIngredientName(match[1]),
             originalText: rawIngredient,
@@ -138,28 +138,28 @@ class IngredientResolver {
     return name
       .toLowerCase()
       .trim()
-      .replace(/^(de\s+|d'|du\s+|des\s+|la\s+|le\s+|les\s+)/, '') // Retirer articles
+      .replace(/^(of\s+|a\s+|an\s+|the\s+)/, '') // Remove articles
       .replace(/\s+/g, ' ')
       .trim();
   }
 
   normalizeUnit(unit) {
     const unitMap = {
-      'g': 'gramme',
-      'kg': 'kilogramme',
-      'ml': 'millilitre',
-      'cl': 'centilitre',
-      'l': 'litre',
-      'c. à s': 'cuillère à soupe',
-      'c.à.s': 'cuillère à soupe',
-      'cuillère': 'cuillère à soupe',
-      'cuillères': 'cuillère à soupe',
-      'c. à c': 'cuillère à café',
-      'c.à.c': 'cuillère à café',
-      'tasse': 'tasse',
-      'tasses': 'tasse',
-      'pincée': 'pincée',
-      'pincées': 'pincée'
+      'g': 'gram',
+      'kg': 'kilogram',
+      'ml': 'milliliter',
+      'cl': 'centiliter',
+      'l': 'liter',
+      'tbsp': 'tablespoon',
+      'tablespoon': 'tablespoon',
+      'tablespoons': 'tablespoon',
+      'tsp': 'teaspoon',
+      'teaspoon': 'teaspoon',
+      'teaspoons': 'teaspoon',
+      'cup': 'cup',
+      'cups': 'cup',
+      'pinch': 'pinch',
+      'pinches': 'pinch'
     };
 
     const normalized = unit.toLowerCase().trim();
@@ -182,21 +182,24 @@ class IngredientResolver {
   }
 
   createFallbackIngredient(name) {
+    // Ensure we have a valid name
+    const normalizedName = name ? name.toLowerCase().trim() : 'unknown ingredient';
+    
     return {
-      name: name,
-      displayName: name.charAt(0).toUpperCase() + name.slice(1),
-      displayPlural: name + 's',
-      plural: name + 's',
-      type: 'autre',
+      name: normalizedName,
+      displayName: normalizedName.charAt(0).toUpperCase() + normalizedName.slice(1),
+      displayPlural: normalizedName + 's',
+      plural: normalizedName + 's',
+      type: 'other',
       frozenOrCanned: false,
       seasons: [],
       withPork: false,
-      storeShelf: 'épicerie',
+      storeShelf: 'grocery',
       grossWeight: 100
     };
   }
 
-  // Méthode pour regrouper les ingrédients similaires
+  // Method to group similar ingredients
   groupSimilarIngredients(ingredients) {
     const groups = new Map();
 

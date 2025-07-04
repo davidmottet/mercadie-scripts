@@ -8,10 +8,10 @@ class ScraperService {
   }
 
   async scrapeRecipe(url) {
-    await this.logger.info('SCRAPER_START', `Démarrage du scraping pour: ${url}`);
+    await this.logger.info('SCRAPER_START', `Starting scraping for: ${url}`);
 
     try {
-      // Éléments à extraire d'une recette
+      // Elements to extract from a recipe
       const elements = {
         title: 'h1, .recipe-title, [class*="title"]',
         description: '.recipe-description, .description, .intro',
@@ -22,30 +22,30 @@ class ScraperService {
         portions: '[class*="serving"], [class*="portion"]'
       };
 
-      // Soumettre le job de scraping
+      // Submit scraping job
       const job = await this.scraper.submitJob(url, elements);
-      await this.logger.info('SCRAPER_JOB_SUBMITTED', `Job soumis avec ID: ${job.id}`);
+      await this.logger.info('SCRAPER_JOB_SUBMITTED', `Job submitted with ID: ${job.id}`);
 
-      // Attendre que le job soit terminé
+      // Wait for job completion
       let attempts = 0;
       const maxAttempts = 30; // 5 minutes max
       
       while (attempts < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, 10000)); // Attendre 10 secondes
+        await new Promise(resolve => setTimeout(resolve, 10000)); // Wait 10 seconds
         
         const jobStatus = await this.scraper.getJobStatus(job.id);
         await this.logger.debug('SCRAPER_STATUS_CHECK', `Status: ${jobStatus.status}`);
 
         if (jobStatus.status === 'Completed') {
-          await this.logger.success('SCRAPER_COMPLETED', 'Scraping terminé avec succès');
+          await this.logger.success('SCRAPER_COMPLETED', 'Scraping completed successfully');
           
-          // Nettoyer le job
+          // Clean up job
           await this.scraper.deleteJob(job.id);
           
           return this.parseScrapedData(jobStatus.result, url);
         } else if (jobStatus.status === 'Failed') {
           await this.scraper.deleteJob(job.id);
-          throw new Error(`Le scraping a échoué: ${jobStatus.error || 'Erreur inconnue'}`);
+          throw new Error(`Scraping failed: ${jobStatus.error || 'Unknown error'}`);
         }
         
         attempts++;
@@ -53,11 +53,11 @@ class ScraperService {
 
       // Timeout
       await this.scraper.deleteJob(job.id);
-      throw new Error('Timeout: Le scraping a pris trop de temps');
+      throw new Error('Timeout: Scraping took too long');
 
     } catch (error) {
       await this.logger.error('SCRAPER_ERROR', error.message);
-      throw new Error(`Erreur lors du scraping: ${error.message}`);
+      throw new Error(`Error during scraping: ${error.message}`);
     }
   }
 
@@ -75,31 +75,31 @@ class ScraperService {
     };
 
     try {
-      // Parser le titre
+      // Parse title
       if (scrapedResult.title && scrapedResult.title.length > 0) {
         result.title = this.cleanText(scrapedResult.title[0]);
       }
 
-      // Parser la description
+      // Parse description
       if (scrapedResult.description && scrapedResult.description.length > 0) {
         result.description = this.cleanText(scrapedResult.description[0]);
       }
 
-      // Parser les ingrédients
+      // Parse ingredients
       if (scrapedResult.ingredients) {
         result.rawIngredients = scrapedResult.ingredients
           .map(ing => this.cleanText(ing))
           .filter(ing => ing.length > 0);
       }
 
-      // Parser les étapes
+      // Parse steps
       if (scrapedResult.steps) {
         result.rawSteps = scrapedResult.steps
           .map(step => this.cleanText(step))
           .filter(step => step.length > 0);
       }
 
-      // Parser les temps (tentative d'extraction de nombres)
+      // Parse times (attempt to extract numbers)
       if (scrapedResult.preparationTime && scrapedResult.preparationTime.length > 0) {
         result.preparationTime = this.extractTime(scrapedResult.preparationTime[0]);
       }
@@ -108,18 +108,18 @@ class ScraperService {
         result.cookingTime = this.extractTime(scrapedResult.cookingTime[0]);
       }
 
-      // Parser le nombre de portions
+      // Parse number of portions
       if (scrapedResult.portions && scrapedResult.portions.length > 0) {
         result.portions = this.extractNumber(scrapedResult.portions[0]);
       }
 
-      // Valeurs par défaut si manquantes
-      if (!result.title) result.title = 'Recette scrapée';
-      if (!result.description) result.description = 'Recette récupérée depuis ' + originalUrl;
+      // Default values if missing
+      if (!result.title) result.title = 'Scraped recipe';
+      if (!result.description) result.description = 'Recipe retrieved from ' + originalUrl;
       if (!result.portions) result.portions = 4;
 
     } catch (error) {
-      this.logger.warn('SCRAPER_PARSE_WARNING', `Erreur lors du parsing: ${error.message}`);
+      this.logger.warn('SCRAPER_PARSE_WARNING', `Error during parsing: ${error.message}`);
     }
 
     return result;
@@ -128,8 +128,8 @@ class ScraperService {
   cleanText(text) {
     if (!text) return '';
     return text
-      .replace(/<[^>]*>/g, '') // Retirer HTML
-      .replace(/\s+/g, ' ') // Normaliser les espaces
+      .replace(/<[^>]*>/g, '') // Remove HTML
+      .replace(/\s+/g, ' ') // Normalize spaces
       .trim();
   }
 

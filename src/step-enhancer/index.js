@@ -8,10 +8,10 @@ class StepEnhancer {
   }
 
   async enhanceSteps(recipeData, resolvedIngredients) {
-    await this.logger.info('STEP_ENHANCER_START', `Enrichissement des étapes pour: ${recipeData.title}`);
+    await this.logger.info('STEP_ENHANCER_START', `Enhancing steps for: ${recipeData.title}`);
 
     try {
-      // Préparer les données pour l'IA
+      // Prepare data for AI
       const ingredientsList = resolvedIngredients.map(ing => ({
         name: ing.name,
         displayName: ing.displayName,
@@ -20,7 +20,7 @@ class StepEnhancer {
         type: ing.type
       }));
 
-      // Appeler l'IA pour enrichir les étapes
+      // Call AI to enhance steps
       const enhancedSteps = await this.aiService.enhanceSteps(
         recipeData.title,
         recipeData.description,
@@ -28,25 +28,25 @@ class StepEnhancer {
         recipeData.rawSteps
       );
 
-      // Post-traiter les étapes
+      // Post-process steps
       const processedSteps = this.postProcessSteps(enhancedSteps, resolvedIngredients);
 
-      await this.logger.success('STEP_ENHANCER_COMPLETE', `${processedSteps.length} étapes enrichies`);
+      await this.logger.success('STEP_ENHANCER_COMPLETE', `${processedSteps.length} steps enhanced`);
       return processedSteps;
 
     } catch (error) {
       await this.logger.error('STEP_ENHANCER_ERROR', error.message);
       
-      // Fallback: créer des étapes basiques
+      // Fallback: create basic steps
       const fallbackSteps = this.createFallbackSteps(recipeData.rawSteps);
-      await this.logger.warn('STEP_ENHANCER_FALLBACK', `Utilisation du fallback avec ${fallbackSteps.length} étapes`);
+      await this.logger.warn('STEP_ENHANCER_FALLBACK', `Using fallback with ${fallbackSteps.length} steps`);
       return fallbackSteps;
     }
   }
 
   postProcessSteps(enhancedSteps, resolvedIngredients) {
     return enhancedSteps.map((step, index) => {
-      // Valider et nettoyer les données
+      // Validate and clean data
       const processedStep = {
         order: step.order || (index + 1),
         text: this.cleanStepText(step.text),
@@ -59,7 +59,7 @@ class StepEnhancer {
         toolsUsed: Array.isArray(step.toolsUsed) ? step.toolsUsed : []
       };
 
-      // Enrichir avec des métadonnées
+      // Enrich with metadata
       processedStep.estimatedDuration = this.estimateStepDuration(processedStep);
       processedStep.difficulty = this.assessStepDifficulty(processedStep);
 
@@ -72,14 +72,14 @@ class StepEnhancer {
     
     return text
       .trim()
-      .replace(/\s+/g, ' ') // Normaliser les espaces
-      .replace(/^\d+\.?\s*/, '') // Retirer numérotation éventuelle
-      .charAt(0).toUpperCase() + text.slice(1); // Première lettre en majuscule
+      .replace(/\s+/g, ' ') // Normalize spaces
+      .replace(/^\d+\.?\s*/, '') // Remove numbering if present
+      .charAt(0).toUpperCase() + text.slice(1); // First letter uppercase
   }
 
   validateStepType(type) {
-    const validTypes = ['préparation', 'cuisson', 'repos', 'assemblage', 'finition'];
-    return validTypes.includes(type) ? type : 'préparation';
+    const validTypes = ['preparation', 'cooking', 'resting', 'assembly', 'finishing'];
+    return validTypes.includes(type) ? type : 'preparation';
   }
 
   validateTemperature(temperature) {
@@ -102,45 +102,45 @@ class StepEnhancer {
   }
 
   estimateStepDuration(step) {
-    // Estimation basée sur le type d'étape et les mots-clés
+    // Estimation based on step type and keywords
     const baseDurations = {
-      'préparation': 5,
-      'cuisson': 15,
-      'repos': 30,
-      'assemblage': 10,
-      'finition': 5
+      'preparation': 5,
+      'cooking': 15,
+      'resting': 30,
+      'assembly': 10,
+      'finishing': 5
     };
 
     let duration = baseDurations[step.type] || 5;
 
-    // Ajustements basés sur le contenu
+    // Adjustments based on content
     if (step.cookingTime) {
       duration = Math.max(duration, step.cookingTime);
     }
 
     const text = step.text.toLowerCase();
-    if (text.includes('fouet') || text.includes('mélang')) duration += 3;
-    if (text.includes('hach') || text.includes('coupe')) duration += 5;
-    if (text.includes('mijot') || text.includes('réduire')) duration += 10;
+    if (text.includes('whisk') || text.includes('mix')) duration += 3;
+    if (text.includes('chop') || text.includes('cut')) duration += 5;
+    if (text.includes('simmer') || text.includes('reduce')) duration += 10;
 
-    return Math.max(1, Math.min(duration, 120)); // Entre 1 et 120 minutes
+    return Math.max(1, Math.min(duration, 120)); // Between 1 and 120 minutes
   }
 
   assessStepDifficulty(step) {
-    let difficulty = 1; // Facile par défaut
+    let difficulty = 1; // Easy by default
 
     const text = step.text.toLowerCase();
     
-    // Techniques avancées
-    if (text.includes('tempér') || text.includes('émulsio')) difficulty += 2;
-    if (text.includes('flamb') || text.includes('caramé')) difficulty += 2;
-    if (text.includes('clarifi') || text.includes('monte')) difficulty += 1;
+    // Advanced techniques
+    if (text.includes('temper') || text.includes('emuls')) difficulty += 2;
+    if (text.includes('flamb') || text.includes('caramel')) difficulty += 2;
+    if (text.includes('clarify') || text.includes('mount')) difficulty += 1;
     
-    // Précision requise
+    // Required precision
     if (step.temperature && step.temperature > 200) difficulty += 1;
     if (step.cookingTime && step.cookingTime > 60) difficulty += 1;
     
-    // Outils spécialisés
+    // Specialized tools
     if (step.toolsUsed.includes('mandoline') || step.toolsUsed.includes('thermomix')) {
       difficulty += 1;
     }
@@ -153,8 +153,8 @@ class StepEnhancer {
 
     return rawSteps.map((step, index) => ({
       order: index + 1,
-      text: typeof step === 'string' ? step : 'Étape de préparation',
-      type: 'préparation',
+      text: typeof step === 'string' ? step : 'Preparation step',
+      type: 'preparation',
       temperature: null,
       cookingTime: null,
       notes: '',
@@ -166,7 +166,7 @@ class StepEnhancer {
     }));
   }
 
-  // Méthode pour analyser la cohérence des étapes
+  // Method to analyze step coherence
   analyzeStepCoherence(steps) {
     const analysis = {
       totalDuration: 0,
@@ -176,34 +176,26 @@ class StepEnhancer {
     };
 
     if (!steps.length) {
-      analysis.warnings.push('Aucune étape définie');
+      analysis.warnings.push('No steps defined');
       return analysis;
     }
 
-    // Calculer les métriques
+    // Calculate metrics
     analysis.totalDuration = steps.reduce((sum, step) => sum + (step.estimatedDuration || 0), 0);
     analysis.averageDifficulty = steps.reduce((sum, step) => sum + (step.difficulty || 1), 0) / steps.length;
 
-    // Compter les types d'étapes
+    // Count step types
     steps.forEach(step => {
       analysis.stepTypes[step.type] = (analysis.stepTypes[step.type] || 0) + 1;
     });
 
-    // Détecter les incohérences
+    // Detect inconsistencies
     if (analysis.totalDuration > 300) {
-      analysis.warnings.push('Durée totale très longue (>5h)');
+      analysis.warnings.push('Very long total duration (>5h)');
     }
 
     if (analysis.averageDifficulty > 4) {
-      analysis.warnings.push('Recette très complexe');
-    }
-
-    // Vérifier l'ordre logique
-    const hasPreparation = analysis.stepTypes['préparation'] > 0;
-    const hasCuisson = analysis.stepTypes['cuisson'] > 0;
-    
-    if (hasCuisson && !hasPreparation) {
-      analysis.warnings.push('Cuisson sans préparation préalable');
+      analysis.warnings.push('Very complex recipe');
     }
 
     return analysis;

@@ -9,24 +9,24 @@ class DatabaseService {
     this.logger = new Logger();
   }
 
-  // ==================== RECETTES ====================
+  // ==================== RECIPES ====================
 
   async saveRecipe(recipeData) {
-    await this.logger.info('DB_SAVE_RECIPE', `Sauvegarde de la recette: ${recipeData.title}`);
+    await this.logger.info('DB_SAVE_RECIPE', `Saving recipe: ${recipeData.title}`);
 
     try {
       const recipe = new Recipe();
       
-      // Mapper les données
+      // Map data
       recipe.name = recipeData.title;
       recipe.slug = this.generateSlug(recipeData.title);
       recipe.preparationTime = recipeData.preparationTime || 0;
       recipe.bakingTime = recipeData.cookingTime || 0;
       recipe.portions = recipeData.portions || 4;
-      recipe.difficulty = recipeData.difficulty || 'Moyen';
-      recipe.published = false; // Par défaut non publié
+      recipe.difficulty = recipeData.difficulty || 'Medium';
+      recipe.published = false; // Not published by default
       
-      // Valeurs nutritionnelles si présentes
+      // Nutritional values if present
       if (recipeData.nutritionalValues) {
         Object.entries(recipeData.nutritionalValues).forEach(([key, value]) => {
           if (recipe.hasOwnProperty(key)) {
@@ -36,12 +36,12 @@ class DatabaseService {
       }
 
       await recipe.save();
-      await this.logger.success('DB_SAVE_RECIPE', `Recette sauvegardée avec ID: ${recipe.id}`);
+      await this.logger.success('DB_SAVE_RECIPE', `Recipe saved with ID: ${recipe.id}`);
       
       return recipe;
     } catch (error) {
       await this.logger.error('DB_SAVE_RECIPE', error.message);
-      throw new Error(`Erreur lors de la sauvegarde de recette: ${error.message}`);
+      throw new Error(`Error saving recipe: ${error.message}`);
     }
   }
 
@@ -54,24 +54,24 @@ class DatabaseService {
     }
   }
 
-  // ==================== INGRÉDIENTS ====================
+  // ==================== INGREDIENTS ====================
 
   async findIngredientByName(name) {
-    await this.logger.debug('DB_FIND_INGREDIENT', `Recherche ingrédient: ${name}`);
+    await this.logger.debug('DB_FIND_INGREDIENT', `Searching ingredient: ${name}`);
     
     try {
-      // Recherche par nom exact
+      // Search by exact name
       let ingredient = await Ingredient.findByName(name);
       
       if (!ingredient) {
-        // Recherche par displayName
+        // Search by displayName
         const query = new Parse.Query(Ingredient);
         query.equalTo('displayName', name);
         ingredient = await query.first();
       }
       
       if (ingredient) {
-        await this.logger.debug('DB_FIND_INGREDIENT', `Ingrédient trouvé: ${ingredient.id}`);
+        await this.logger.debug('DB_FIND_INGREDIENT', `Ingredient found: ${ingredient.id}`);
       }
       
       return ingredient;
@@ -82,12 +82,17 @@ class DatabaseService {
   }
 
   async saveIngredient(ingredientData) {
-    await this.logger.info('DB_SAVE_INGREDIENT', `Sauvegarde ingrédient: ${ingredientData.name}`);
+    // Validate required fields
+    if (!ingredientData.name || ingredientData.name.trim() === '') {
+      throw new Error('Ingredient name is required');
+    }
+
+    await this.logger.info('DB_SAVE_INGREDIENT', `Saving ingredient: ${ingredientData.name}`);
 
     try {
       const ingredient = new Ingredient();
       
-      // Mapper toutes les propriétés
+      // Map all properties
       Object.entries(ingredientData).forEach(([key, value]) => {
         if (ingredient.hasOwnProperty(key)) {
           ingredient[key] = value;
@@ -95,36 +100,36 @@ class DatabaseService {
       });
 
       await ingredient.save();
-      await this.logger.success('DB_SAVE_INGREDIENT', `Ingrédient sauvegardé avec ID: ${ingredient.id}`);
+      await this.logger.success('DB_SAVE_INGREDIENT', `Ingredient saved with ID: ${ingredient.id}`);
       
       return ingredient;
     } catch (error) {
       await this.logger.error('DB_SAVE_INGREDIENT', error.message);
-      throw new Error(`Erreur lors de la sauvegarde d'ingrédient: ${error.message}`);
+      throw new Error(`Error saving ingredient: ${error.message}`);
     }
   }
 
-  // ==================== ÉTAPES DE RECETTE ====================
+  // ==================== RECIPE STEPS ====================
 
   async saveRecipeStep(stepData, recipe) {
-    await this.logger.debug('DB_SAVE_STEP', `Sauvegarde étape ${stepData.order} pour recette ${recipe.id}`);
+    await this.logger.debug('DB_SAVE_STEP', `Saving step ${stepData.order} for recipe ${recipe.id}`);
 
     try {
       const step = new RecipeStep();
       
-      // Mapper les données de base
+      // Map basic data
       step.order = stepData.order;
       step.text = stepData.text;
-      step.type = stepData.type || 'préparation';
+      step.type = stepData.type || 'preparation';
       step.temperature = stepData.temperature;
       step.cookingTime = stepData.cookingTime;
       step.notes = stepData.notes || '';
       step.subSteps = stepData.subSteps || [];
       
-      // Relation avec la recette
+      // Relation with recipe
       step.set('recipe', recipe);
       
-      // Gestion des ingrédients référencés dans l'étape
+      // Handle ingredients referenced in the step
       if (stepData.ingredientRefs && stepData.ingredientRefs.length > 0) {
         const ingredientReferences = [];
         
@@ -133,7 +138,7 @@ class DatabaseService {
           if (ingredient) {
             ingredientReferences.push({
               ingredient: ingredient,
-              notes: `Utilisé à l'étape ${stepData.order}`
+              notes: `Used at step ${stepData.order}`
             });
           }
         }
@@ -142,26 +147,26 @@ class DatabaseService {
       }
 
       await step.save();
-      await this.logger.debug('DB_SAVE_STEP', `Étape sauvegardée avec ID: ${step.id}`);
+      await this.logger.debug('DB_SAVE_STEP', `Step saved with ID: ${step.id}`);
       
       return step;
     } catch (error) {
       await this.logger.error('DB_SAVE_STEP', error.message);
-      throw new Error(`Erreur lors de la sauvegarde d'étape: ${error.message}`);
+      throw new Error(`Error saving step: ${error.message}`);
     }
   }
 
-  // ==================== UTILITAIRES ====================
+  // ==================== UTILITIES ====================
 
   generateSlug(title) {
     return title
       .toLowerCase()
       .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '') // Retirer les accents
-      .replace(/[^a-z0-9\s-]/g, '') // Garder seulement lettres, chiffres, espaces et tirets
+      .replace(/[\u0300-\u036f]/g, '') // Remove accents
+      .replace(/[^a-z0-9\s-]/g, '') // Keep only letters, numbers, spaces and dashes
       .trim()
-      .replace(/\s+/g, '-') // Remplacer espaces par tirets
-      .replace(/-+/g, '-'); // Éviter les tirets multiples
+      .replace(/\s+/g, '-') // Replace spaces with dashes
+      .replace(/-+/g, '-'); // Avoid multiple dashes
   }
 
   async getStats() {

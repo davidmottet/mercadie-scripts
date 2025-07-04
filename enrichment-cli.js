@@ -10,16 +10,16 @@ async function main() {
   
   if (args.length < 2) {
     console.log(`
-🧩 Script d'enrichissement de recettes
+🧩 Recipe Enrichment Script
 
 Usage:
-  node enrichment-cli.js scraping <URL>           - Scraper une recette depuis une URL
-  node enrichment-cli.js IA "<theme/plat>"        - Générer une recette via IA
-  node enrichment-cli.js stats                    - Afficher les statistiques
+  node enrichment-cli.js scraping <URL>           - Scrape a recipe from a URL
+  node enrichment-cli.js AI "<theme/dish>"        - Generate a recipe via AI
+  node enrichment-cli.js stats                    - Display statistics
 
-Exemples:
-  node enrichment-cli.js scraping "https://example.com/recette"
-  node enrichment-cli.js IA "tarte aux pommes"
+Examples:
+  node enrichment-cli.js scraping "https://example.com/recipe"
+  node enrichment-cli.js AI "apple pie"
   node enrichment-cli.js stats
     `);
     process.exit(1);
@@ -30,27 +30,27 @@ Exemples:
   try {
     if (source === 'stats') {
       const stats = await enricher.getEnrichmentStats();
-      console.log('\n📊 Statistiques de la base de données:');
-      console.log(`  Recettes: ${stats.recipes}`);
-      console.log(`  Ingrédients: ${stats.ingredients}`);
-      console.log(`  Étapes: ${stats.steps}`);
+      console.log('\n📊 Database Statistics:');
+      console.log(`  Recipes: ${stats.recipes}`);
+      console.log(`  Ingredients: ${stats.ingredients}`);
+      console.log(`  Steps: ${stats.steps}`);
       return;
     }
 
-    console.log(`\n🚀 Démarrage de l'enrichissement...`);
+    console.log(`\n🚀 Starting enrichment...`);
     console.log(`Source: ${source}`);
     console.log(`Input: ${input}\n`);
 
     const result = await enricher.enrichRecipe(source, input);
 
-    console.log('\n✅ Enrichissement terminé avec succès!');
-    console.log(`ID de la recette: ${result.recipeId}`);
-    console.log(`Ingrédients traités: ${result.ingredientsCount}`);
-    console.log(`Étapes créées: ${result.stepsCount}`);
-    console.log(`ID d'enrichissement: ${result.enrichmentId}`);
+    console.log('\n✅ Enrichment completed successfully!');
+    console.log(`Recipe ID: ${result.recipeId}`);
+    console.log(`Processed ingredients: ${result.ingredientsCount}`);
+    console.log(`Created steps: ${result.stepsCount}`);
+    console.log(`Enrichment ID: ${result.enrichmentId}`);
 
   } catch (error) {
-    console.error('\n❌ Erreur lors de l\'enrichissement:');
+    console.error('\n❌ Error during enrichment:');
     console.error(error.message);
     process.exit(1);
   }

@@ -19,35 +19,35 @@ class RecipeEnricher {
 
   async enrichRecipe(source, input) {
     const enrichmentId = `enrichment-${Date.now()}`;
-    await this.logger.info('ENRICHMENT_START', `Démarrage enrichissement ${enrichmentId}`, { source, input });
+    await this.logger.info('ENRICHMENT_START', `Starting enrichment ${enrichmentId}`, { source, input });
 
     try {
-      // Étape 1: Récupération de la recette brute
+      // Step 1: Get raw recipe
       const rawRecipe = await this.getRawRecipe(source, input);
-      await this.logger.success('STEP_1_COMPLETE', 'Recette brute récupérée', { title: rawRecipe.title });
+      await this.logger.success('STEP_1_COMPLETE', 'Raw recipe retrieved', { title: rawRecipe.title });
 
-      // Étape 2: Résolution des ingrédients
+      // Step 2: Resolve ingredients
       const resolvedIngredients = await this.ingredientResolver.resolveIngredients(rawRecipe.rawIngredients);
-      await this.logger.success('STEP_2_COMPLETE', `${resolvedIngredients.length} ingrédients résolus`);
+      await this.logger.success('STEP_2_COMPLETE', `${resolvedIngredients.length} ingredients resolved`);
 
-      // Étape 3: Enrichissement des étapes
+      // Step 3: Enhance steps
       const enhancedSteps = await this.stepEnhancer.enhanceSteps(rawRecipe, resolvedIngredients);
-      await this.logger.success('STEP_3_COMPLETE', `${enhancedSteps.length} étapes enrichies`);
+      await this.logger.success('STEP_3_COMPLETE', `${enhancedSteps.length} steps enhanced`);
 
-      // Étape 4: Calcul nutritionnel
+      // Step 4: Calculate nutrition
       const nutritionalValues = await this.nutritionEstimator.estimateNutrition(
         resolvedIngredients, 
         rawRecipe.portions
       );
-      await this.logger.success('STEP_4_COMPLETE', 'Valeurs nutritionnelles calculées');
+      await this.logger.success('STEP_4_COMPLETE', 'Nutritional values calculated');
 
-      // Étape 5: Sauvegarde complète
+      // Step 5: Complete save
       const savedRecipe = await this.saveCompleteRecipe({
         ...rawRecipe,
         nutritionalValues
       }, resolvedIngredients, enhancedSteps);
 
-      await this.logger.success('ENRICHMENT_COMPLETE', `Recette enrichie sauvegardée: ${savedRecipe.id}`);
+      await this.logger.success('ENRICHMENT_COMPLETE', `Enriched recipe saved: ${savedRecipe.id}`);
 
       return {
         success: true,
@@ -60,7 +60,7 @@ class RecipeEnricher {
 
     } catch (error) {
       await this.logger.error('ENRICHMENT_FAILED', error.message);
-      throw new Error(`Échec de l'enrichissement: ${error.message}`);
+      throw new Error(`Enrichment failed: ${error.message}`);
     }
   }
 
@@ -69,25 +69,25 @@ class RecipeEnricher {
       case 'scraping':
         return await this.scraperService.scrapeRecipe(input);
       
-      case 'IA':
+      case 'AI':
       case 'ai':
         const generatedRecipe = await this.aiService.generateRecipe(input);
         return {
           ...generatedRecipe,
-          source: 'IA',
+          source: 'AI',
           sourceInput: input
         };
       
       default:
-        throw new Error(`Source non supportée: ${source}`);
+        throw new Error(`Unsupported source: ${source}`);
     }
   }
 
   async saveCompleteRecipe(recipeData, ingredients, steps) {
-    // Sauvegarder la recette principale
+    // Save main recipe
     const recipe = await this.dbService.saveRecipe(recipeData);
 
-    // Sauvegarder toutes les étapes
+    // Save all steps
     for (const stepData of steps) {
       await this.dbService.saveRecipeStep(stepData, recipe);
     }

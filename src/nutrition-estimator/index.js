@@ -8,10 +8,10 @@ class NutritionEstimator {
   }
 
   async estimateNutrition(resolvedIngredients, portions) {
-    await this.logger.info('NUTRITION_ESTIMATOR_START', `Calcul nutrition pour ${portions} portions`);
+    await this.logger.info('NUTRITION_ESTIMATOR_START', `Calculating nutrition for ${portions} portions`);
 
     try {
-      // Préparer les données pour l'IA
+      // Prepare data for AI
       const ingredientsWithQuantities = resolvedIngredients.map(ing => ({
         name: ing.displayName,
         quantity: ing.quantity,
@@ -19,24 +19,24 @@ class NutritionEstimator {
         type: ing.type
       }));
 
-      // Appeler l'IA pour calculer la nutrition
+      // Call AI to calculate nutrition
       const nutritionalValues = await this.aiService.computeNutrition(
         ingredientsWithQuantities,
         portions
       );
 
-      // Valider et ajuster les valeurs
+      // Validate and adjust values
       const validatedValues = this.validateNutritionalValues(nutritionalValues);
 
-      await this.logger.success('NUTRITION_ESTIMATOR_COMPLETE', 'Valeurs nutritionnelles calculées', validatedValues);
+      await this.logger.success('NUTRITION_ESTIMATOR_COMPLETE', 'Nutritional values calculated', validatedValues);
       return validatedValues;
 
     } catch (error) {
       await this.logger.error('NUTRITION_ESTIMATOR_ERROR', error.message);
       
-      // Fallback: valeurs par défaut
+      // Fallback: default values
       const fallbackValues = this.createFallbackNutrition();
-      await this.logger.warn('NUTRITION_ESTIMATOR_FALLBACK', 'Utilisation des valeurs par défaut');
+      await this.logger.warn('NUTRITION_ESTIMATOR_FALLBACK', 'Using default values');
       return fallbackValues;
     }
   }
@@ -44,7 +44,7 @@ class NutritionEstimator {
   validateNutritionalValues(values) {
     const validated = { ...values };
     
-    // Valeurs par défaut et limites
+    // Default values and limits
     const defaults = {
       kcalPer100g: 200,
       kjPer100g: 837,

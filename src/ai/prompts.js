@@ -1,101 +1,117 @@
-// Prompts IA centralisés pour l'enrichissement des recettes
+// Centralized AI prompts for recipe enrichment
 
 export const generateRecipePrompt = (target) => {
-  return `Tu es un chef cuisinier expert. Génère une recette complète selon ce thème ou type de plat : "${target}".
+  return `You are an expert chef. Generate a complete recipe based on this theme or dish type: "${target}".
 
-Réponds UNIQUEMENT avec un objet JSON au format suivant, sans texte avant ou après :
+Respond ONLY with a JSON object in the following format, without any text before or after:
 
 {
-  "title": "Nom de la recette",
-  "description": "Description appétissante de la recette",
+  "title": "Recipe name",
+  "description": "Appetizing description of the recipe",
   "rawIngredients": [
-    "250g de farine",
-    "2 œufs",
-    "200ml de lait"
+    "250g flour",
+    "2 eggs",
+    "200ml milk"
   ],
   "rawSteps": [
-    "Mélanger la farine et les œufs",
-    "Ajouter le lait progressivement"
+    "Mix flour and eggs",
+    "Add milk gradually"
   ],
   "preparationTime": 15,
   "cookingTime": 30,
   "portions": 4,
-  "difficulty": "Facile"
+  "difficulty": "Easy"
 }
 
-Assure-toi que :
-- Les ingrédients incluent les quantités précises
-- Les étapes sont dans l'ordre logique
-- Les temps sont réalistes
-- La difficulté est appropriée`;
+Make sure that:
+- Ingredients include precise quantities
+- Steps are in logical order
+- Times are realistic
+- Difficulty is appropriate`;
 };
 
 export const resolveIngredientPrompt = (name) => {
-  return `Tu es un expert en ingrédients culinaires. Voici un ingrédient extrait d'une recette : "${name}".
+  return `You are an expert in culinary ingredients. Here is an ingredient extracted from a recipe: "${name}".
 
-Analyse cet ingrédient et rends-moi un objet JSON compatible avec ce modèle, sans texte avant ou après :
+Analyze this ingredient and return a JSON object compatible with this model, without any text before or after:
 
 {
-  "name": "nom normalisé en minuscules sans accents",
-  "displayName": "Nom d'affichage joli",
-  "displayPlural": "Nom au pluriel pour affichage",
-  "plural": "nom au pluriel normalisé",
-  "type": "légume|viande|poisson|produit-laitier|céréale|fruit|épice|huile|autre",
+  "name": "normalized name in lowercase without accents (REQUIRED)",
+  "displayName": "Nice display name",
+  "displayPlural": "Plural name for display",
+  "plural": "normalized plural name",
+  "type": "vegetable|meat|fish|dairy|cereal|fruit|spice|oil|other",
   "frozenOrCanned": false,
-  "seasons": ["printemps", "été", "automne", "hiver"] ou [] si toute l'année,
+  "seasons": ["spring", "summer", "autumn", "winter"] or [] if year-round,
   "withPork": false,
-  "storeShelf": "frais|surgelé|épicerie|boucherie|poissonnerie",
+  "storeShelf": "fresh|frozen|grocery|butcher|fishmonger",
   "grossWeight": 100
 }
 
-Règles importantes :
-- Normalise le nom (ex: "tomates cerises" → "tomate cerise")
-- Détermine le type principal
-- Indique les saisons si c'est saisonnier
-- Estime un poids brut standard en grammes`;
+CRITICAL REQUIREMENTS:
+- The "name" field is MANDATORY and must be a normalized lowercase string
+- Normalize the name (e.g., "large eggs" → "large egg", "cherry tomatoes" → "cherry tomato")
+- Remove articles and unnecessary words
+- Determine the main type
+- Indicate seasons if seasonal
+- Estimate a standard gross weight in grams
+
+Example for "large eggs":
+{
+  "name": "large egg",
+  "displayName": "Large Egg",
+  "displayPlural": "Large Eggs",
+  "plural": "large eggs",
+  "type": "dairy",
+  "frozenOrCanned": false,
+  "seasons": [],
+  "withPork": false,
+  "storeShelf": "fresh",
+  "grossWeight": 60
+}`;
 };
 
 export const enhanceStepsPrompt = (title, description, ingredients, rawSteps) => {
-  return `Tu es un chef professionnel. Voici une recette à enrichir :
+  return `You are a professional chef. Here is a recipe to enhance:
 
-**Titre :** ${title}
-**Description :** ${description}
-**Ingrédients :** ${JSON.stringify(ingredients, null, 2)}
-**Étapes brutes :** ${JSON.stringify(rawSteps, null, 2)}
+**Title:** ${title}
+**Description:** ${description}
+**Ingredients:** ${JSON.stringify(ingredients, null, 2)}
+**Raw steps:** ${JSON.stringify(rawSteps, null, 2)}
 
-Enrichis ces étapes en détaillant précisément chaque action. Pour chaque étape, rends-moi un objet JSON au format suivant, sans texte avant ou après :
+Enhance these steps by detailing each action precisely. For each step, return a JSON object in the following format, without any text before or after:
 
 {
   "steps": [
     {
       "order": 1,
-      "text": "Description détaillée de l'étape avec quantités exactes",
-      "type": "préparation|cuisson|repos|assemblage|finition",
-      "temperature": 180 ou null,
-      "cookingTime": 15 ou null,
-      "notes": "Conseils spécifiques pour cette étape",
-      "subSteps": ["Action 1", "Action 2"] ou [],
-      "ingredientRefs": ["nom-ingredient1", "nom-ingredient2"],
-      "toolsUsed": ["fouet", "casserole", "four"] ou []
+      "text": "Detailed description of the step with exact quantities",
+      "type": "preparation|cooking|resting|assembly|finishing",
+      "temperature": 180 or null,
+      "cookingTime": 15 or null,
+      "notes": "Specific tips for this step",
+      "subSteps": ["Action 1", "Action 2"] or [],
+      "ingredientRefs": ["ingredient-name1", "ingredient-name2"],
+      "toolsUsed": ["whisk", "pan", "oven"] or []
     }
   ]
 }
 
-Règles importantes :
-- Détaille chaque action avec précision
-- Indique les quantités d'ingrédients utilisées à chaque étape
-- Spécifie les temps et températures
-- Ajoute des conseils pratiques
-- Référence les bons ingrédients par leur nom normalisé`;
+Important rules:
+- Detail each action with precision
+- Indicate ingredient quantities used at each step
+- Specify times and temperatures
+- Add practical tips
+- Reference the correct ingredients by their normalized name`;
 };
 
 export const computeNutritionPrompt = (ingredients, portions) => {
-  return `Tu es un nutritionniste expert. Calcule les valeurs nutritionnelles pour cette recette :
+  return `You are an expert nutritionist. Calculate the nutritional values for this recipe:
 
-**Ingrédients avec quantités :** ${JSON.stringify(ingredients, null, 2)}
-**Nombre de portions :** ${portions}
+**Ingredients with quantities:** ${JSON.stringify(ingredients, null, 2)}
+**Number of portions:** ${portions}
 
-Estime les valeurs nutritionnelles POUR UNE PORTION et rends-moi un objet JSON au format suivant, sans texte avant ou après :
+Estimate the nutritional values FOR ONE PORTION and return a JSON object in the following format, without any text before or after:
 
 {
   "nutritionalValues": {
@@ -117,9 +133,9 @@ Estime les valeurs nutritionnelles POUR UNE PORTION et rends-moi un objet JSON a
   "nutriscore": "B"
 }
 
-Base tes calculs sur :
-- Les quantités exactes d'ingrédients
-- Les méthodes de cuisson qui peuvent modifier les valeurs
-- Les valeurs nutritionnelles standards des aliments
-- Le nombre de portions pour calculer par portion`;
+Base your calculations on:
+- Exact ingredient quantities
+- Cooking methods that may modify values
+- Standard nutritional values of foods
+- Number of portions to calculate per portion`;
 };

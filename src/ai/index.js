@@ -14,7 +14,7 @@ class AIService {
   }
 
   async generateRecipe(target) {
-    await this.logger.info('AI_GENERATE_RECIPE', `Génération de recette pour: ${target}`);
+    await this.logger.info('AI_GENERATE_RECIPE', `Generating recipe for: ${target}`);
     
     try {
       const prompt = generateRecipePrompt(target);
@@ -22,16 +22,16 @@ class AIService {
       
       const recipeData = response;
       
-      await this.logger.success('AI_GENERATE_RECIPE', 'Recette générée avec succès', recipeData);
+      await this.logger.success('AI_GENERATE_RECIPE', 'Recipe generated successfully', recipeData);
       return recipeData;
     } catch (error) {
-      await this.logger.error('AI_GENERATE_RECIPE', `Erreur: ${error.message}`);
-      throw new Error(`Erreur lors de la génération de recette: ${error.message}`);
+      await this.logger.error('AI_GENERATE_RECIPE', `Error: ${error.message}`);
+      throw new Error(`Error generating recipe: ${error.message}`);
     }
   }
 
   async resolveIngredient(ingredientName) {
-    await this.logger.info('AI_RESOLVE_INGREDIENT', `Résolution de l'ingrédient: ${ingredientName}`);
+    await this.logger.info('AI_RESOLVE_INGREDIENT', `Resolving ingredient: ${ingredientName}`);
     
     try {
       const prompt = resolveIngredientPrompt(ingredientName);
@@ -39,16 +39,20 @@ class AIService {
       
       const ingredientData = response;
       
-      await this.logger.success('AI_RESOLVE_INGREDIENT', 'Ingrédient résolu', ingredientData);
+      if (!ingredientData.name || ingredientData.name.trim() === '') {
+        throw new Error(`AI response missing required 'name' field for ingredient: ${ingredientName}`);
+      }
+      
+      await this.logger.success('AI_RESOLVE_INGREDIENT', 'Ingredient resolved', ingredientData);
       return ingredientData;
     } catch (error) {
-      await this.logger.error('AI_RESOLVE_INGREDIENT', `Erreur: ${error.message}`);
-      throw new Error(`Erreur lors de la résolution d'ingrédient: ${error.message}`);
+      await this.logger.error('AI_RESOLVE_INGREDIENT', `Error: ${error.message}`);
+      throw new Error(`Error resolving ingredient: ${error.message}`);
     }
   }
 
   async enhanceSteps(title, description, ingredients, rawSteps) {
-    await this.logger.info('AI_ENHANCE_STEPS', 'Enrichissement des étapes de recette');
+    await this.logger.info('AI_ENHANCE_STEPS', 'Enhancing recipe steps');
     
     try {
       const prompt = enhanceStepsPrompt(title, description, ingredients, rawSteps);
@@ -56,16 +60,16 @@ class AIService {
       
       const stepsData = response;
       
-      await this.logger.success('AI_ENHANCE_STEPS', 'Étapes enrichies avec succès', { stepCount: stepsData.steps.length });
+      await this.logger.success('AI_ENHANCE_STEPS', 'Steps enhanced successfully', { stepCount: stepsData.steps.length });
       return stepsData.steps;
     } catch (error) {
-      await this.logger.error('AI_ENHANCE_STEPS', `Erreur: ${error.message}`);
-      throw new Error(`Erreur lors de l'enrichissement des étapes: ${error.message}`);
+      await this.logger.error('AI_ENHANCE_STEPS', `Error: ${error.message}`);
+      throw new Error(`Error enhancing steps: ${error.message}`);
     }
   }
 
   async computeNutrition(ingredients, portions) {
-    await this.logger.info('AI_COMPUTE_NUTRITION', `Calcul nutrition pour ${portions} portions`);
+    await this.logger.info('AI_COMPUTE_NUTRITION', `Calculating nutrition for ${portions} portions`);
     
     try {
       const prompt = computeNutritionPrompt(ingredients, portions);
@@ -73,11 +77,11 @@ class AIService {
       
       const nutritionData = response;
       
-      await this.logger.success('AI_COMPUTE_NUTRITION', 'Valeurs nutritionnelles calculées', nutritionData);
+      await this.logger.success('AI_COMPUTE_NUTRITION', 'Nutritional values calculated', nutritionData);
       return nutritionData.nutritionalValues;
     } catch (error) {
-      await this.logger.error('AI_COMPUTE_NUTRITION', `Erreur: ${error.message}`);
-      throw new Error(`Erreur lors du calcul nutritionnel: ${error.message}`);
+      await this.logger.error('AI_COMPUTE_NUTRITION', `Error: ${error.message}`);
+      throw new Error(`Error calculating nutrition: ${error.message}`);
     }
   }
 
@@ -102,7 +106,7 @@ class AIService {
       return cleaned;
     }
     
-    throw new Error('Réponse invalide du provider AI');
+    throw new Error('Invalid response from AI provider');
   }
 }
 
